@@ -156,6 +156,14 @@ body {
   padding: 24px;
 }
 
+.upload-zone > *:not(button):not(.file-remove) {
+  pointer-events: none;
+}
+
+.upload-zone .file-remove {
+  pointer-events: auto;
+}
+
 .upload-icon {
   width: 48px;
   height: 48px;
