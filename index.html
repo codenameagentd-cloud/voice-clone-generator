@@ -882,9 +882,18 @@ let uploadedFile = null;
 let isPlaying = false;
 
 // DOM
-// Prevent browser default file open behavior on entire document
-document.addEventListener("dragover", e => e.preventDefault());
-document.addEventListener("drop", e => e.preventDefault());
+
+// Prevent browser from opening dropped files (but let upload zones handle their own drops)
+document.addEventListener("dragover", function(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "copy";
+}, false);
+document.addEventListener("drop", function(e) {
+  // Only prevent default if not dropped on an upload zone
+  if (!e.target.closest(".upload-zone")) {
+    e.preventDefault();
+  }
+}, false);
 
 const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
