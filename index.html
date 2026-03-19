@@ -712,8 +712,8 @@ body {
   <!-- Step 1: Upload -->
   <div class="section visible" id="section-upload">
     <div class="card">
-      <div class="card-title">Upload Voice Sample</div>
-      <div class="card-desc">Upload a clear voice recording. 5 seconds minimum, 3 minutes recommended for best quality.</div>
+      <div class="card-title">Training Sample <span style="font-size:12px;color:var(--text-3);font-weight:400;">(required, 1 file)</span></div>
+      <div class="card-desc">Upload a clear voice recording for cloning. 5s minimum, 3 min recommended.</div>
 
       <div class="upload-zone" id="upload-zone">
         <div class="upload-icon">🎙</div>
@@ -727,6 +727,17 @@ body {
         <div class="quality-item"><div class="quality-dot good"></div>Volume OK</div>
         <div class="quality-item"><div class="quality-dot good"></div>Low noise</div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Reference Sample <span style="font-size:12px;color:var(--text-3);font-weight:400;">(optional, 1 file)</span></div>
+      <div class="card-desc">Upload a reference audio to guide style and delivery. Improves similarity.</div>
+      <div class="upload-zone" id="ref-upload-zone" style="padding:20px;">
+        <div class="upload-icon" style="font-size:28px;width:48px;height:48px;">🎧</div>
+        <div class="upload-text"><strong>Click to upload</strong> reference audio</div>
+        <div class="upload-formats">MP3, WAV, M4A · Optional</div>
+      </div>
+      <input type="file" id="ref-file-input" accept=".mp3,.wav,.m4a,audio/*" hidden>
     </div>
 
     <div class="card">
@@ -1111,6 +1122,46 @@ document.getElementById('btn-download').addEventListener('click', function() {
 });
 
 document.getElementById('btn-to-export').addEventListener('click', () => goToStep(4));
+
+// Reference upload (optional)
+const refUploadZone = document.getElementById('ref-upload-zone');
+const refFileInput = document.getElementById('ref-file-input');
+let refFile = null;
+
+refUploadZone.addEventListener('click', () => refFileInput.click());
+refUploadZone.addEventListener('dragover', e => { e.preventDefault(); refUploadZone.classList.add('dragover'); });
+refUploadZone.addEventListener('dragleave', () => refUploadZone.classList.remove('dragover'));
+refUploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  refUploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) handleRefFile(e.dataTransfer.files[0]);
+});
+refFileInput.addEventListener('change', e => { if (e.target.files.length) handleRefFile(e.target.files[0]); });
+
+function handleRefFile(file) {
+  refFile = file;
+  const size = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+'MB' : (file.size/1024).toFixed(0)+'KB';
+  refUploadZone.classList.add('has-file');
+  refUploadZone.innerHTML = `
+    <div class="file-info">
+      <div class="file-icon">🎧</div>
+      <div class="file-meta">
+        <div class="file-name">${file.name}</div>
+        <div class="file-size">${size}</div>
+      </div>
+      <button class="file-remove" onclick="removeRefFile(event)">✕</button>
+    </div>`;
+}
+
+function removeRefFile(e) {
+  e.stopPropagation();
+  refFile = null;
+  refUploadZone.classList.remove('has-file');
+  refUploadZone.innerHTML = `
+    <div class="upload-icon" style="font-size:28px;width:48px;height:48px;">🎧</div>
+    <div class="upload-text"><strong>Click to upload</strong> reference audio</div>
+    <div class="upload-formats">MP3, WAV, M4A · Optional</div>`;
+}
 
 // Navigation
 function goToStep(n) {
