@@ -785,7 +785,7 @@ body {
         <div class="char-count"><span id="char-count">24</span> characters</div>
 
         <div class="btn-group">
-          <button class="btn btn-primary" id="btn-generate">Generate Speech</button>
+          <button class="btn btn-primary" id="btn-generate">Preview Speech</button>
         </div>
       </div>
 
@@ -944,12 +944,55 @@ document.getElementById('gen-text').addEventListener('input', e => {
   document.getElementById('char-count').textContent = e.target.value.length;
 });
 
-document.getElementById('btn-generate').addEventListener('click', () => {
-  const player = document.getElementById('player');
-  player.style.display = 'block';
-  generateWaveform();
-  player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+document.getElementById('btn-generate').addEventListener('click', function() {
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  
+  // Simulate generation delay
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = 'Preview Speech';
+    const player = document.getElementById('player');
+    player.style.display = 'block';
+    generateWaveform();
+    player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    // Auto-play mock audio using Web Audio API
+    playMockAudio();
+  }, 1500);
 });
+
+function playMockAudio() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const duration = 5;
+  const sampleRate = ctx.sampleRate;
+  const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
+  const data = buffer.getChannelData(0);
+  
+  // Generate a simple speech-like waveform (modulated tone)
+  for (let i = 0; i < data.length; i++) {
+    const t = i / sampleRate;
+    const freq = 180 + Math.sin(t * 2) * 30; // varying pitch
+    const envelope = Math.sin(Math.PI * t / duration) * 0.3;
+    data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * (0.5 + 0.5 * Math.sin(t * 8));
+  }
+  
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start();
+  
+  // Simulate playback progress
+  isPlaying = true;
+  document.getElementById('play-btn').textContent = '⏸';
+  simulatePlayback();
+  
+  source.onended = () => {
+    isPlaying = false;
+    document.getElementById('play-btn').textContent = '▶';
+  };
+}
 
 function generateWaveform() {
   const bars = document.getElementById('waveform-bars');
