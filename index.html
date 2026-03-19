@@ -882,6 +882,10 @@ let uploadedFile = null;
 let isPlaying = false;
 
 // DOM
+// Prevent browser default file open behavior on entire document
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => e.preventDefault());
+
 const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
 const btnTrain = document.getElementById('btn-train');
