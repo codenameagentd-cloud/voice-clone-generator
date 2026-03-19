@@ -9,7 +9,7 @@ export const MINIMAX_CONFIG = {
 
   endpoints: {
     fileUpload: '/v1/files/upload',
-    voiceClone: '/v1/voice_clone',
+    voiceClone: '/v1/t2a_v2/clone/upload',
     t2a: '/v1/t2a_v2',
   },
 
