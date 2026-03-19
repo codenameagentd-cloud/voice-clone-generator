@@ -1092,6 +1092,47 @@ document.getElementById('copy-id-btn').addEventListener('click', function() {
   setTimeout(() => this.textContent = 'Copy', 1500);
 });
 
+// Download mock audio
+document.getElementById('btn-download').addEventListener('click', function() {
+  const fmt = document.querySelector('.export-option.selected')?.dataset.format || 'wav';
+  // Generate a short silent audio blob as mock
+  const sampleRate = 44100;
+  const duration = 2;
+  const numSamples = sampleRate * duration;
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+  // WAV header
+  const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+  // Generate a simple tone so download isn't empty
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const sample = Math.sin(2 * Math.PI * 220 * t) * 0.3;
+    view.setInt16(44 + i * 2, sample * 32767, true);
+  }
+  const blob = new Blob([buffer], { type: 'audio/wav' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'voice-clone-output.' + fmt;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
 document.getElementById('btn-to-export').addEventListener('click', () => goToStep(4));
 
 // Navigation
