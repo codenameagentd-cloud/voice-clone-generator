@@ -959,12 +959,23 @@ document.getElementById('gen-text').addEventListener('input', e => {
   document.getElementById('char-count').textContent = e.target.value.length;
 });
 
+// TTS state
+let speechUtterance = null;
+let speechPlaying = false;
+let currentSpeed = 1;
+let currentTone = 0;
+
 document.getElementById('btn-generate').addEventListener('click', function() {
   const btn = this;
+  const text = document.getElementById('test-text').value.trim();
+  if (!text) return;
+  
   btn.disabled = true;
   btn.textContent = 'Generating...';
   
-  // Simulate generation delay
+  // Stop any existing speech
+  window.speechSynthesis.cancel();
+  
   setTimeout(() => {
     btn.disabled = false;
     btn.textContent = 'Preview Speech';
@@ -973,40 +984,40 @@ document.getElementById('btn-generate').addEventListener('click', function() {
     generateWaveform();
     player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
-    // Auto-play mock audio using Web Audio API
-    playMockAudio();
-  }, 1500);
+    // Use Web Speech API to actually read the text
+    speakText(text);
+  }, 800);
 });
 
-function playMockAudio() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const duration = 5;
-  const sampleRate = ctx.sampleRate;
-  const buffer = ctx.createBuffer(1, sampleRate * duration, sampleRate);
-  const data = buffer.getChannelData(0);
+function speakText(text) {
+  window.speechSynthesis.cancel();
   
-  // Generate a simple speech-like waveform (modulated tone)
-  for (let i = 0; i < data.length; i++) {
-    const t = i / sampleRate;
-    const freq = 180 + Math.sin(t * 2) * 30; // varying pitch
-    const envelope = Math.sin(Math.PI * t / duration) * 0.3;
-    data[i] = Math.sin(2 * Math.PI * freq * t) * envelope * (0.5 + 0.5 * Math.sin(t * 8));
-  }
+  const utter = new SpeechSynthesisUtterance(text);
+  // Try to find a Chinese voice
+  const voices = window.speechSynthesis.getVoices();
+  const zhVoice = voices.find(v => v.lang.startsWith('zh')) || voices[0];
+  if (zhVoice) utter.voice = zhVoice;
   
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.connect(ctx.destination);
-  source.start();
+  utter.rate = currentSpeed;
+  utter.pitch = 1 + (currentTone / 12); // map -12~+12 to ~0.0~2.0
   
-  // Simulate playback progress
   isPlaying = true;
+  speechPlaying = true;
   document.getElementById('play-btn').textContent = '⏸';
-  simulatePlayback();
+  document.getElementById('player-seek').value = 0;
   
-  source.onended = () => {
+  utter.onend = () => {
     isPlaying = false;
+    speechPlaying = false;
     document.getElementById('play-btn').textContent = '▶';
+    document.getElementById('player-seek').value = 100;
+    document.getElementById('player-time').textContent = '0:05 / 0:05';
+    document.querySelectorAll('.waveform-bar').forEach(b => b.classList.add('played'));
   };
+  
+  speechUtterance = utter;
+  window.speechSynthesis.speak(utter);
+  simulatePlayback();
 }
 
 function generateWaveform() {
@@ -1021,11 +1032,34 @@ function generateWaveform() {
   }
 }
 
-// Play
+// Play/Pause/Restart
 document.getElementById('play-btn').addEventListener('click', function() {
-  isPlaying = !isPlaying;
-  this.textContent = isPlaying ? '⏸' : '▶';
-  if (isPlaying) simulatePlayback();
+  const text = document.getElementById('test-text').value.trim();
+  if (!text) return;
+  
+  // If playback finished (seek at 100), restart
+  if (parseInt(document.getElementById('player-seek').value) >= 100) {
+    document.getElementById('player-seek').value = 0;
+    document.getElementById('player-time').textContent = '0:00 / 0:05';
+    document.querySelectorAll('.waveform-bar').forEach(b => b.classList.remove('played'));
+    speakText(text);
+    return;
+  }
+  
+  if (isPlaying) {
+    window.speechSynthesis.pause();
+    isPlaying = false;
+    this.textContent = '▶';
+  } else {
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    } else {
+      speakText(text);
+    }
+    isPlaying = true;
+    this.textContent = '⏸';
+    simulatePlayback();
+  }
 });
 
 function simulatePlayback() {
@@ -1045,17 +1079,27 @@ function simulatePlayback() {
     pos++;
     seek.value = pos;
     const sec = Math.floor(pos * 5 / 100);
-    timeEl.textContent = `0:0${sec} / 0:05`;
+    timeEl.textContent = \`0:0\${sec} / 0:05\`;
     const playedCount = Math.floor(pos / 100 * bars.length);
     bars.forEach((b, i) => b.classList.toggle('played', i < playedCount));
   }, 50);
 }
 
-// Speed
+// Load voices
+window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+// Speed - changes rate and re-generates
 document.querySelectorAll('.speed-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    currentSpeed = parseFloat(btn.dataset.speed);
+    // Auto re-generate with new speed
+    const text = document.getElementById('test-text').value.trim();
+    if (text && document.getElementById('player').style.display === 'block') {
+      window.speechSynthesis.cancel();
+      speakText(text);
+    }
   });
 });
 
