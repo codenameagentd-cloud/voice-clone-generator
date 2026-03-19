@@ -756,7 +756,10 @@ body {
   <!-- Step 2: Training -->
   <div class="section" id="section-train">
     <div class="card">
-      <div class="card-title">Training Your Voice</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
+        <div class="card-title">Training Your Voice</div>
+        <button class="btn btn-outline" onclick="goToStep(1)" style="padding:6px 14px;font-size:12px;">← Back</button>
+      </div>
       <div class="card-desc">MiniMax is analyzing your voice sample and creating a unique voice profile.</div>
 
       <div class="progress-container">
@@ -824,6 +827,7 @@ body {
       </div>
 
       <div class="btn-group">
+        <button class="btn btn-outline" onclick="goToStep(1)">← Re-upload</button>
         <button class="btn btn-secondary" id="btn-to-export">Export →</button>
       </div>
     </div>
