@@ -977,7 +977,7 @@ document.getElementById('btn-generate').addEventListener('click', function() {
   if (!text) return;
   
   btn.disabled = true;
-  btn.textContent = 'Generating...';
+  btn.textContent = 'Generating (Demo)...';
   
   // Stop any existing speech
   window.speechSynthesis.cancel();
@@ -987,6 +987,7 @@ document.getElementById('btn-generate').addEventListener('click', function() {
     btn.textContent = 'Preview Speech';
     const player = document.getElementById('player');
     player.style.display = 'block';
+    if (!document.getElementById('mock-notice')) { const n = document.createElement('div'); n.id = 'mock-notice'; n.style.cssText = 'color:#a78bfa;font-size:12px;text-align:center;margin-bottom:8px;opacity:0.8'; n.textContent = '⚠ Demo mode — using browser TTS. Connect MiniMax API for real voice clone.'; player.parentNode.insertBefore(n, player); }
     generateWaveform();
     player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
