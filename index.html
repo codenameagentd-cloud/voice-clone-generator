@@ -156,13 +156,6 @@ body {
   padding: 24px;
 }
 
-.upload-zone > *:not(button):not(.file-remove) {
-  pointer-events: none;
-}
-
-.upload-zone .file-remove {
-  pointer-events: auto;
-}
 
 .upload-icon {
   width: 48px;
@@ -895,38 +888,14 @@ const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
 const btnTrain = document.getElementById('btn-train');
 
-// Drag & Drop — bulletproof version
-// Prevent browser from opening files dropped anywhere on page
-['dragover','drop'].forEach(evt => {
-  document.addEventListener(evt, e => e.preventDefault(), false);
-});
-
-// Upload zone: click to browse
 uploadZone.addEventListener('click', () => fileInput.click());
 
-// Drag counter to handle child element enter/leave flickering
-let dragCounter = 0;
-uploadZone.addEventListener('dragenter', e => {
-  e.preventDefault();
-  dragCounter++;
-  uploadZone.classList.add('dragover');
-});
-uploadZone.addEventListener('dragleave', e => {
-  dragCounter--;
-  if (dragCounter === 0) uploadZone.classList.remove('dragover');
-});
-uploadZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = 'copy';
-});
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
 uploadZone.addEventListener('drop', e => {
   e.preventDefault();
-  e.stopPropagation();
-  dragCounter = 0;
   uploadZone.classList.remove('dragover');
-  const files = e.dataTransfer.files;
-  if (files && files.length) handleFile(files[0]);
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
 });
 fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
 
@@ -1206,28 +1175,12 @@ const refFileInput = document.getElementById('ref-file-input');
 let refFile = null;
 
 refUploadZone.addEventListener('click', () => refFileInput.click());
-let refDragCounter = 0;
-refUploadZone.addEventListener('dragenter', e => {
-  e.preventDefault();
-  refDragCounter++;
-  refUploadZone.classList.add('dragover');
-});
-refUploadZone.addEventListener('dragleave', e => {
-  refDragCounter--;
-  if (refDragCounter === 0) refUploadZone.classList.remove('dragover');
-});
-refUploadZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = 'copy';
-});
+refUploadZone.addEventListener('dragover', e => { e.preventDefault(); refUploadZone.classList.add('dragover'); });
+refUploadZone.addEventListener('dragleave', () => refUploadZone.classList.remove('dragover'));
 refUploadZone.addEventListener('drop', e => {
   e.preventDefault();
-  e.stopPropagation();
-  refDragCounter = 0;
   refUploadZone.classList.remove('dragover');
-  const files = e.dataTransfer.files;
-  if (files && files.length) handleRefFile(files[0]);
+  if (e.dataTransfer.files.length) handleRefFile(e.dataTransfer.files[0]);
 });
 refFileInput.addEventListener('change', e => { if (e.target.files.length) handleRefFile(e.target.files[0]); });
 
