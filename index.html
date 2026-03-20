@@ -891,30 +891,42 @@ let isPlaying = false;
 
 // DOM
 
-// Prevent browser from opening dropped files (but let upload zones handle their own drops)
-document.addEventListener("dragover", function(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "copy";
-}, false);
-document.addEventListener("drop", function(e) {
-  // Only prevent default if not dropped on an upload zone
-  if (!e.target.closest(".upload-zone")) {
-    e.preventDefault();
-  }
-}, false);
-
 const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
 const btnTrain = document.getElementById('btn-train');
 
-// Upload - Single file (MiniMax accepts 1 training + 1 optional prompt audio)
+// Drag & Drop — bulletproof version
+// Prevent browser from opening files dropped anywhere on page
+['dragover','drop'].forEach(evt => {
+  document.addEventListener(evt, e => e.preventDefault(), false);
+});
+
+// Upload zone: click to browse
 uploadZone.addEventListener('click', () => fileInput.click());
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+
+// Drag counter to handle child element enter/leave flickering
+let dragCounter = 0;
+uploadZone.addEventListener('dragenter', e => {
+  e.preventDefault();
+  dragCounter++;
+  uploadZone.classList.add('dragover');
+});
+uploadZone.addEventListener('dragleave', e => {
+  dragCounter--;
+  if (dragCounter === 0) uploadZone.classList.remove('dragover');
+});
+uploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'copy';
+});
 uploadZone.addEventListener('drop', e => {
   e.preventDefault();
+  e.stopPropagation();
+  dragCounter = 0;
   uploadZone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  const files = e.dataTransfer.files;
+  if (files && files.length) handleFile(files[0]);
 });
 fileInput.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
 
@@ -1194,12 +1206,28 @@ const refFileInput = document.getElementById('ref-file-input');
 let refFile = null;
 
 refUploadZone.addEventListener('click', () => refFileInput.click());
-refUploadZone.addEventListener('dragover', e => { e.preventDefault(); refUploadZone.classList.add('dragover'); });
-refUploadZone.addEventListener('dragleave', () => refUploadZone.classList.remove('dragover'));
+let refDragCounter = 0;
+refUploadZone.addEventListener('dragenter', e => {
+  e.preventDefault();
+  refDragCounter++;
+  refUploadZone.classList.add('dragover');
+});
+refUploadZone.addEventListener('dragleave', e => {
+  refDragCounter--;
+  if (refDragCounter === 0) refUploadZone.classList.remove('dragover');
+});
+refUploadZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'copy';
+});
 refUploadZone.addEventListener('drop', e => {
   e.preventDefault();
+  e.stopPropagation();
+  refDragCounter = 0;
   refUploadZone.classList.remove('dragover');
-  if (e.dataTransfer.files.length) handleRefFile(e.dataTransfer.files[0]);
+  const files = e.dataTransfer.files;
+  if (files && files.length) handleRefFile(files[0]);
 });
 refFileInput.addEventListener('change', e => { if (e.target.files.length) handleRefFile(e.target.files[0]); });
 
