@@ -869,7 +869,7 @@ body {
       </div>
 
       <div class="btn-group">
-        <button class="btn btn-primary" id="btn-download">⬇ Download WAV</button>
+        <button class="btn btn-primary" id="btn-download" disabled>⬇ Waiting for API</button>
         <button class="btn btn-outline" onclick="goToStep(3)">← Back to Test</button>
       </div>
     </div>
@@ -1120,7 +1120,7 @@ document.querySelectorAll('.export-option').forEach(opt => {
   opt.addEventListener('click', () => {
     document.querySelectorAll('.export-option').forEach(o => o.classList.remove('selected'));
     opt.classList.add('selected');
-    document.getElementById('btn-download').textContent = '⬇ Download ' + opt.dataset.format.toUpperCase();
+    // disabled in mock mode
   });
 });
 
@@ -1132,41 +1132,7 @@ document.getElementById('copy-id-btn').addEventListener('click', function() {
 
 // Download mock audio
 document.getElementById('btn-download').addEventListener('click', function() {
-  const fmt = document.querySelector('.export-option.selected')?.dataset.format || 'wav';
-  // Generate a short silent audio blob as mock
-  const sampleRate = 44100;
-  const duration = 2;
-  const numSamples = sampleRate * duration;
-  const buffer = new ArrayBuffer(44 + numSamples * 2);
-  const view = new DataView(buffer);
-  // WAV header
-  const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
-  writeStr(0, 'RIFF');
-  view.setUint32(4, 36 + numSamples * 2, true);
-  writeStr(8, 'WAVE');
-  writeStr(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * 2, true);
-  view.setUint16(32, 2, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, 'data');
-  view.setUint32(40, numSamples * 2, true);
-  // Silent mock audio (real API will provide actual voice)
-  for (let i = 0; i < numSamples; i++) {
-    view.setInt16(44 + i * 2, 0, true); // silence
-  }
-  const blob = new Blob([buffer], { type: 'audio/wav' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'voice-clone-output.' + fmt;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  alert('MiniMax API key required. Export is not available in mock mode.');
 });
 
 document.getElementById('btn-to-export').addEventListener('click', () => goToStep(4));
