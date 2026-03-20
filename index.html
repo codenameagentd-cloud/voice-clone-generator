@@ -973,7 +973,7 @@ let currentTone = 0;
 
 document.getElementById('btn-generate').addEventListener('click', function() {
   const btn = this;
-  const text = document.getElementById('test-text').value.trim();
+  const text = document.getElementById('gen-text').value.trim();
   if (!text) return;
   
   btn.disabled = true;
@@ -1040,7 +1040,7 @@ function generateWaveform() {
 
 // Play/Pause/Restart
 document.getElementById('play-btn').addEventListener('click', function() {
-  const text = document.getElementById('test-text').value.trim();
+  const text = document.getElementById('gen-text').value.trim();
   if (!text) return;
   
   // If playback finished (seek at 100), restart
@@ -1101,7 +1101,7 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
     btn.classList.add('active');
     currentSpeed = parseFloat(btn.dataset.speed);
     // Auto re-generate with new speed
-    const text = document.getElementById('test-text').value.trim();
+    const text = document.getElementById('gen-text').value.trim();
     if (text && document.getElementById('player').style.display === 'block') {
       window.speechSynthesis.cancel();
       speakText(text);
@@ -1154,11 +1154,9 @@ document.getElementById('btn-download').addEventListener('click', function() {
   view.setUint16(34, 16, true);
   writeStr(36, 'data');
   view.setUint32(40, numSamples * 2, true);
-  // Generate a simple tone so download isn't empty
+  // Silent mock audio (real API will provide actual voice)
   for (let i = 0; i < numSamples; i++) {
-    const t = i / sampleRate;
-    const sample = Math.sin(2 * Math.PI * 220 * t) * 0.3;
-    view.setInt16(44 + i * 2, sample * 32767, true);
+    view.setInt16(44 + i * 2, 0, true); // silence
   }
   const blob = new Blob([buffer], { type: 'audio/wav' });
   const url = URL.createObjectURL(blob);
