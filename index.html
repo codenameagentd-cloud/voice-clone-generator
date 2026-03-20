@@ -884,6 +884,10 @@ let isPlaying = false;
 
 // DOM
 
+// Prevent browser from opening dropped files anywhere on page
+document.addEventListener("dragover", e => e.preventDefault());
+document.addEventListener("drop", e => e.preventDefault());
+
 const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
 const btnTrain = document.getElementById('btn-train');
@@ -893,7 +897,7 @@ uploadZone.addEventListener('click', () => fileInput.click());
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
 uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
+  e.preventDefault(); e.stopPropagation();
   uploadZone.classList.remove('dragover');
   if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
 });
@@ -1178,7 +1182,7 @@ refUploadZone.addEventListener('click', () => refFileInput.click());
 refUploadZone.addEventListener('dragover', e => { e.preventDefault(); refUploadZone.classList.add('dragover'); });
 refUploadZone.addEventListener('dragleave', () => refUploadZone.classList.remove('dragover'));
 refUploadZone.addEventListener('drop', e => {
-  e.preventDefault();
+  e.preventDefault(); e.stopPropagation();
   refUploadZone.classList.remove('dragover');
   if (e.dataTransfer.files.length) handleRefFile(e.dataTransfer.files[0]);
 });
