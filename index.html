@@ -907,7 +907,7 @@ function handleFile(file) {
   uploadedFile = file;
   const size = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+'MB' : (file.size/1024).toFixed(0)+'KB';
   uploadZone.classList.add('has-file');
-  uploadZone.innerHTML = \`
+  uploadZone.innerHTML = `
     <div class="file-info">
       <div class="file-icon">🎵</div>
       <div class="file-meta">
@@ -915,7 +915,7 @@ function handleFile(file) {
         <div class="file-size">\${size}</div>
       </div>
       <button class="file-remove" onclick="removeFile(event)">✕</button>
-    </div>\`;
+    </div>`;
   btnTrain.disabled = false;
   document.getElementById('quality-checks').style.display = 'grid';
 }
@@ -924,10 +924,10 @@ function removeFile(e) {
   e.stopPropagation();
   uploadedFile = null;
   uploadZone.classList.remove('has-file');
-  uploadZone.innerHTML = \`
+  uploadZone.innerHTML = `
     <div class="upload-icon">🎙</div>
     <div class="upload-text"><strong>Click to upload</strong> or drag and drop</div>
-    <div class="upload-formats">MP3, WAV, M4A · 5s – 3min</div>\`;
+    <div class="upload-formats">MP3, WAV, M4A · 5s – 3min</div>`;
   btnTrain.disabled = true;
   document.getElementById('quality-checks').style.display = 'none';
 }
@@ -1085,7 +1085,7 @@ function simulatePlayback() {
     pos++;
     seek.value = pos;
     const sec = Math.floor(pos * 5 / 100);
-    timeEl.textContent = \`0:0\${sec} / 0:05\`;
+    timeEl.textContent = `0:0\${sec} / 0:05`;
     const playedCount = Math.floor(pos / 100 * bars.length);
     bars.forEach((b, i) => b.classList.toggle('played', i < playedCount));
   }, 50);
