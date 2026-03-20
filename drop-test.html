@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head><title>Drop Test</title>
+<style>
+body { background: #111; color: #fff; font-family: sans-serif; padding: 40px; }
+.zone { border: 2px dashed #666; border-radius: 12px; padding: 60px; text-align: center; margin: 20px 0; }
+.zone.over { border-color: #a855f7; background: rgba(168,85,247,0.1); }
+#log { background: #222; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<h2>Drag & Drop Test</h2>
+<div class="zone" id="zone">Drop a file here</div>
+<div id="log"></div>
+<script>
+const zone = document.getElementById('zone');
+const log = document.getElementById('log');
+function l(msg) { log.textContent += new Date().toISOString().slice(11,19) + ' ' + msg + '\n'; log.scrollTop = log.scrollHeight; }
+
+zone.addEventListener('dragenter', e => { e.preventDefault(); l('dragenter target=' + e.target.className); zone.classList.add('over'); });
+zone.addEventListener('dragover', e => { e.preventDefault(); l('dragover'); });
+zone.addEventListener('dragleave', e => { l('dragleave target=' + e.target.className); zone.classList.remove('over'); });
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('over');
+  const f = e.dataTransfer.files;
+  l('DROP! files=' + f.length + (f.length ? ' name=' + f[0].name : ''));
+});
+
+document.addEventListener('dragover', e => l('doc dragover'));
+document.addEventListener('drop', e => { l('doc drop (should not fire if zone caught it)'); e.preventDefault(); });
+</script>
+</body>
+</html>
