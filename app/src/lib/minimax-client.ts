@@ -1,6 +1,6 @@
 import { MINIMAX_CONFIG, CloneStatus } from './minimax-config';
 
-const { baseUrl, authHeader, endpoints, cloneFields, cloneResponse, t2aFields, t2aResponse } = MINIMAX_CONFIG;
+const { baseUrl, constraints } = MINIMAX_CONFIG;
 
 function getApiKey(): string {
   const key = MINIMAX_CONFIG.apiKey;
@@ -8,53 +8,40 @@ function getApiKey(): string {
   return key;
 }
 
-/**
- * Upload a file to MiniMax
- * Returns file_id for use in clone/t2a
- */
-export async function uploadFile(file: Buffer, filename: string, purpose: string = 'voice_clone'): Promise<string> {
-  const key = getApiKey();
-  const formData = new FormData();
-  formData.append('file', new Blob([file]), filename);
-  formData.append('purpose', purpose);
-
-  const res = await fetch(`${baseUrl}${endpoints.fileUpload}`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${key}` },
-    body: formData,
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`File upload failed (${res.status}): ${err}`);
-  }
-
-  const data = await res.json();
-  return data.file_id || data.id;
+function getGroupId(): string {
+  const gid = MINIMAX_CONFIG.groupId;
+  if (!gid) throw new Error('MINIMAX_GROUP_ID is not configured');
+  return gid;
 }
 
 /**
- * Clone a voice from uploaded training audio
- * Returns voice_id (or task_id if async)
+ * Clone a voice from audio file.
+ * MiniMax clone endpoint accepts multipart form with the audio file directly.
+ * Returns voice_id on success.
  */
 export async function cloneVoice(
-  trainingFileId: string,
-  referenceFileId?: string,
-  voiceName?: string
-): Promise<{ voiceId?: string; taskId?: string; status: CloneStatus }> {
+  audioBuffer: Buffer,
+  filename: string,
+  voiceId?: string
+): Promise<{ voiceId: string }> {
   const key = getApiKey();
+  const groupId = getGroupId();
 
-  const body: Record<string, unknown> = {
-    [cloneFields.trainingFile]: trainingFileId,
-  };
-  if (referenceFileId) body[cloneFields.referenceFile] = referenceFileId;
-  if (voiceName) body[cloneFields.voiceName] = voiceName;
+  const formData = new FormData();
+  formData.append('file', new Blob([audioBuffer]), filename);
+  // voice_id: the identifier you want to assign to this cloned voice
+  if (voiceId) {
+    formData.append('voice_id', voiceId);
+  }
 
-  const res = await fetch(`${baseUrl}${endpoints.voiceClone}`, {
-    method: 'POST',
-    headers: authHeader(key),
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(
+    `${baseUrl}${MINIMAX_CONFIG.endpoints.voiceClone}?GroupId=${groupId}`,
+    {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}` },
+      body: formData,
+    }
+  );
 
   if (!res.ok) {
     const err = await res.text();
@@ -62,41 +49,56 @@ export async function cloneVoice(
   }
 
   const data = await res.json();
+  if (data.base_resp?.status_code !== 0 && data.base_resp?.status_code !== undefined) {
+    throw new Error(`Voice clone error: ${data.base_resp?.status_msg || JSON.stringify(data)}`);
+  }
+
   return {
-    voiceId: data[cloneResponse.voiceId],
-    taskId: data[cloneResponse.taskId],
-    status: data[cloneResponse.status] || (data[cloneResponse.voiceId] ? 'done' : 'processing'),
+    voiceId: data.voice_id || voiceId || '',
   };
 }
 
 /**
- * Generate speech from text using a cloned voice
- * Handles 3 response shapes: audio URL, base64, or task_id
+ * Generate speech from text using a cloned (or built-in) voice.
+ * Returns audio hex string or audio URL depending on response.
  */
 export async function generateSpeech(
   voiceId: string,
   text: string,
   speed: number = 1.0,
-  pitch?: number
-): Promise<{ audioUrl?: string; audioBase64?: string; taskId?: string; status: string }> {
+  pitch?: number,
+  format: string = 'mp3'
+): Promise<{ audioData: Buffer; format: string }> {
   const key = getApiKey();
+  const groupId = getGroupId();
 
-  const body: Record<string, unknown> = {
-    [t2aFields.text]: text,
-    [t2aFields.voiceId]: voiceId,
-    [t2aFields.speed]: Math.max(MINIMAX_CONFIG.constraints.speedMin, Math.min(MINIMAX_CONFIG.constraints.speedMax, speed)),
+  const body = {
+    model: MINIMAX_CONFIG.t2aFields.model,
+    text: text.slice(0, constraints.textMaxLength),
+    stream: false,
+    voice_setting: {
+      voice_id: voiceId,
+      speed: Math.max(constraints.speedMin, Math.min(constraints.speedMax, speed)),
+      vol: 1.0,
+      ...(pitch !== undefined ? { pitch: Math.max(constraints.pitchMin, Math.min(constraints.pitchMax, pitch)) } : {}),
+    },
+    audio_setting: {
+      format: format,
+      sample_rate: constraints.defaultSampleRate,
+    },
   };
 
-  // Only include pitch if the field exists and value is provided
-  if (pitch !== undefined && t2aFields.pitch) {
-    body[t2aFields.pitch] = Math.max(MINIMAX_CONFIG.constraints.pitchMin, Math.min(MINIMAX_CONFIG.constraints.pitchMax, pitch));
-  }
-
-  const res = await fetch(`${baseUrl}${endpoints.t2a}`, {
-    method: 'POST',
-    headers: authHeader(key),
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(
+    `${baseUrl}${MINIMAX_CONFIG.endpoints.t2a}?GroupId=${groupId}`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  );
 
   if (!res.ok) {
     const err = await res.text();
@@ -104,34 +106,26 @@ export async function generateSpeech(
   }
 
   const data = await res.json();
-  return {
-    audioUrl: data[t2aResponse.audioUrl],
-    audioBase64: data[t2aResponse.audioBase64],
-    taskId: data[t2aResponse.taskId],
-    status: data[t2aResponse.status] || (data[t2aResponse.audioUrl] || data[t2aResponse.audioBase64] ? 'done' : 'processing'),
-  };
-}
 
-/**
- * Check async task status (if MiniMax uses async flow)
- */
-export async function checkTaskStatus(taskId: string): Promise<{ status: CloneStatus; audioUrl?: string; voiceId?: string }> {
-  const key = getApiKey();
-  // Endpoint shape TBD — placeholder
-  const res = await fetch(`${baseUrl}/v1/tasks/${taskId}`, {
-    method: 'GET',
-    headers: authHeader(key),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Task status check failed (${res.status}): ${err}`);
+  if (data.base_resp?.status_code !== 0 && data.base_resp?.status_code !== undefined) {
+    throw new Error(`TTS error: ${data.base_resp?.status_msg || JSON.stringify(data)}`);
   }
 
-  const data = await res.json();
-  return {
-    status: data.status || 'processing',
-    audioUrl: data.audio_url,
-    voiceId: data.voice_id,
-  };
+  // MiniMax returns audio as hex string in data.audio_file.data
+  // or as a URL in extra_info.audio_url
+  let audioBuffer: Buffer;
+
+  if (data.data?.audio) {
+    // hex-encoded audio bytes
+    audioBuffer = Buffer.from(data.data.audio, 'hex');
+  } else if (data.extra_info?.audio_file) {
+    // base64 audio
+    audioBuffer = Buffer.from(data.extra_info.audio_file, 'base64');
+  } else if (data.audio_file) {
+    audioBuffer = Buffer.from(data.audio_file, 'hex');
+  } else {
+    throw new Error('No audio data in response: ' + JSON.stringify(Object.keys(data)));
+  }
+
+  return { audioData: audioBuffer, format };
 }
