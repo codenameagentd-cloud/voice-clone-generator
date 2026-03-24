@@ -11,15 +11,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Training audio file is required' }, { status: 400 });
     }
 
-    // Try Lisa's endpoint first, fallback to mine
     const xttsForm = new FormData();
     xttsForm.append('file', trainingFile);
+    xttsForm.append('name', trainingFile.name.replace(/\.[^.]+$/, ''));
 
-    let res = await fetch(`${XTTS_URL}/api/clone`, { method: 'POST', body: xttsForm }).catch(() => null);
-    if (!res || !res.ok) {
-      res = await fetch(`${XTTS_URL}/clone`, { method: 'POST', body: xttsForm });
-    }
-
+    const res = await fetch(`${XTTS_URL}/clone`, { method: 'POST', body: xttsForm });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Clone failed');
 
