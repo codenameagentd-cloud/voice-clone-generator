@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cloneVoice } from '@/lib/minimax-client';
-import { MINIMAX_CONFIG } from '@/lib/minimax-config';
+import { cloneVoice } from '@/lib/elevenlabs-client';
+import { ELEVENLABS_CONFIG } from '@/lib/elevenlabs-config';
 
 export async function POST(req: NextRequest) {
-  if (!MINIMAX_CONFIG.apiKey) {
-    return NextResponse.json({ error: 'MiniMax API key not configured' }, { status: 503 });
+  if (!ELEVENLABS_CONFIG.apiKey) {
+    return NextResponse.json({ error: 'ElevenLabs API key not configured' }, { status: 503 });
   }
 
   try {
@@ -17,16 +17,11 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await trainingFile.arrayBuffer());
-    
-    // Generate a voice_id from the name or a random one
-    const voiceId = voiceName 
-      ? `clone_${voiceName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${Date.now()}`
-      : `clone_${Date.now()}`;
-
-    const result = await cloneVoice(buffer, trainingFile.name, voiceId);
+    const result = await cloneVoice(buffer, trainingFile.name, voiceName || undefined);
 
     return NextResponse.json({
       voiceId: result.voiceId,
+      name: result.name,
       status: 'done',
     });
   } catch (err: unknown) {

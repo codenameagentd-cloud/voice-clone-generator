@@ -28,7 +28,7 @@ export async function cloneVoice(
   const groupId = getGroupId();
 
   const formData = new FormData();
-  formData.append('file', new Blob([audioBuffer]), filename);
+  formData.append('file', new Blob([new Uint8Array(audioBuffer)]), filename);
   // voice_id: the identifier you want to assign to this cloned voice
   if (voiceId) {
     formData.append('voice_id', voiceId);
