@@ -22,7 +22,7 @@ print("Model loaded.")
 CLONES_DIR = Path.home() / "voice-cloning" / "cloned-voices"
 CLONES_DIR.mkdir(parents=True, exist_ok=True)
 
-DEFAULT_REF = Path.home() / "voice-cloning" / "reference" / "david-sample.wav"
+DEFAULT_REF = Path.home() / "voice-cloning" / "david-refs" / "ref1-thoughts-on-ai-22k.wav"
 
 _voices: dict = {}
 
