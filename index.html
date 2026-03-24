@@ -1086,7 +1086,7 @@ function simulatePlayback() {
     pos++;
     seek.value = pos;
     const sec = Math.floor(pos * 5 / 100);
-    timeEl.textContent = `0:0\${sec} / 0:05`;
+    timeEl.textContent = `0:0${sec} / 0:05`;
     const playedCount = Math.floor(pos / 100 * bars.length);
     bars.forEach((b, i) => b.classList.toggle('played', i < playedCount));
   }, 50);
@@ -1113,6 +1113,7 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
 // Tone
 document.getElementById('tone-slider').addEventListener('input', e => {
   const v = parseInt(e.target.value);
+  currentTone = v;
   document.getElementById('tone-value').textContent = (v > 0 ? '+' : '') + v;
 });
 
