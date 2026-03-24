@@ -175,5 +175,6 @@ if __name__ == "__main__":
     # Pre-load model
     get_tts()
     server = HTTPServer(("0.0.0.0", PORT), XTTSHandler)
+    server.socket.setsockopt(__import__("socket").SOL_SOCKET, __import__("socket").SO_REUSEADDR, 1)
     print(f"XTTS v2 server running on http://localhost:{PORT}")
     server.serve_forever()
