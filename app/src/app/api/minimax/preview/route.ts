@@ -1,35 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateSpeech } from '@/lib/elevenlabs-client';
-import { ELEVENLABS_CONFIG } from '@/lib/elevenlabs-config';
+
+const XTTS_URL = process.env.XTTS_URL || 'http://localhost:8321';
 
 export async function POST(req: NextRequest) {
-  if (!ELEVENLABS_CONFIG.apiKey) {
-    return NextResponse.json({ error: 'ElevenLabs API key not configured' }, { status: 503 });
-  }
-
   try {
-    const { voiceId, text, speed } = await req.json();
+    const body = await req.json();
+    const { voiceId, text, speed, language } = body;
 
-    if (!voiceId || !text) {
-      return NextResponse.json({ error: 'voiceId and text are required' }, { status: 400 });
+    if (!text) {
+      return NextResponse.json({ error: 'text is required' }, { status: 400 });
     }
 
-    if (text.length > ELEVENLABS_CONFIG.constraints.textMaxLength) {
-      return NextResponse.json(
-        { error: `Text exceeds ${ELEVENLABS_CONFIG.constraints.textMaxLength} character limit` },
-        { status: 400 }
-      );
-    }
-
-    const result = await generateSpeech(voiceId, text, speed ?? 1.0);
-
-    const audioUrl = `data:audio/mpeg;base64,${result.audioData.toString('base64')}`;
-
-    return NextResponse.json({
-      audioUrl,
-      format: result.format,
-      status: 'done',
+    const res = await fetch(`${XTTS_URL}/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        voiceId: voiceId || 'david-default',
+        text,
+        speed: speed ?? 1.0,
+        language: language || 'zh-cn',
+      }),
     });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+    return NextResponse.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Generation failed';
     console.error('Preview error:', message);

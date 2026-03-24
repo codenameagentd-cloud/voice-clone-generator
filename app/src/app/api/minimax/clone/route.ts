@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cloneVoice } from '@/lib/elevenlabs-client';
-import { ELEVENLABS_CONFIG } from '@/lib/elevenlabs-config';
+
+const XTTS_URL = process.env.XTTS_URL || 'http://localhost:8321';
 
 export async function POST(req: NextRequest) {
-  if (!ELEVENLABS_CONFIG.apiKey) {
-    return NextResponse.json({ error: 'ElevenLabs API key not configured' }, { status: 503 });
-  }
-
   try {
     const formData = await req.formData();
     const trainingFile = formData.get('trainingFile') as File | null;
@@ -16,14 +12,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Training audio file is required' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await trainingFile.arrayBuffer());
-    const result = await cloneVoice(buffer, trainingFile.name, voiceName || undefined);
+    // Forward to XTTS server
+    const xttsForm = new FormData();
+    xttsForm.append('file', trainingFile);
+    if (voiceName) xttsForm.append('name', voiceName);
 
-    return NextResponse.json({
-      voiceId: result.voiceId,
-      name: result.name,
-      status: 'done',
+    const res = await fetch(`${XTTS_URL}/clone`, {
+      method: 'POST',
+      body: xttsForm,
     });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Clone failed');
+
+    return NextResponse.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Clone failed';
     console.error('Clone error:', message);
