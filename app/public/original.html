@@ -1008,7 +1008,7 @@ document.getElementById('btn-generate').addEventListener('click', async function
     const res = await fetch('/api/minimax/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voiceId, speed: currentSpeed, language })
+      body: JSON.stringify({ text, voiceId, speed: currentSpeed, tone: currentTone, language })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Generation failed');
@@ -1125,10 +1125,9 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
     btn.classList.add('active');
     currentSpeed = parseFloat(btn.dataset.speed);
     // Auto re-generate with new speed
-    const text = document.getElementById('gen-text').value.trim();
-    if (text && document.getElementById('player').style.display === 'block') {
-      if (window._currentXttsAudio) { window._currentXttsAudio.pause(); window._currentXttsAudio = null; }
-      speakText(text);
+    const genBtn = document.getElementById('btn-generate');
+    if (genBtn && !genBtn.disabled && document.getElementById('gen-text').value.trim()) {
+      genBtn.click();
     }
   });
 });
@@ -1138,6 +1137,7 @@ document.getElementById('tone-slider').addEventListener('input', e => {
   const v = parseInt(e.target.value);
   currentTone = v;
   document.getElementById('tone-value').textContent = (v > 0 ? '+' : '') + v;
+  // Note: Tone/pitch adjustment requires re-generation
 });
 
 // Export
