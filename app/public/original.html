@@ -1128,10 +1128,9 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
     document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentSpeed = parseFloat(btn.dataset.speed);
-    // Auto re-generate with new speed
-    const genBtn = document.getElementById('btn-generate');
-    if (genBtn && !genBtn.disabled && document.getElementById('gen-text').value.trim()) {
-      genBtn.click();
+    // Apply speed to current audio playback (no re-generation needed)
+    if (window._currentXttsAudio) {
+      window._currentXttsAudio.playbackRate = currentSpeed;
     }
   });
 });
