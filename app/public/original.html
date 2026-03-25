@@ -772,7 +772,7 @@ body {
         <div class="card-title">Cloning Your Voice</div>
         <button class="btn btn-outline" onclick="goToStep(1)" style="padding:6px 14px;font-size:12px;">← Back</button>
       </div>
-      <div class="card-desc">MiniMax is analyzing your voice sample and creating a unique voice profile.</div>
+      <div class="card-desc">Analyzing your voice sample and creating a unique voice profile.</div>
 
       <div class="progress-container">
         <div class="progress-bar-bg">
@@ -943,7 +943,7 @@ async function simulateTraining() {
   const status = document.getElementById('train-status');
   const time = document.getElementById('train-time');
   
-  bar.style.width = '20%';
+  bar.style.width = '0%';
   status.textContent = 'Uploading voice sample...';
   time.textContent = '';
   
@@ -951,7 +951,7 @@ async function simulateTraining() {
     const cloneForm = new FormData();
     cloneForm.append('trainingFile', uploadedFile);
     
-    bar.style.width = '50%';
+    bar.style.width = '30%';
     status.textContent = 'Uploading...';
     
     const res = await fetch('/api/minimax/clone', { method: 'POST', body: cloneForm });
