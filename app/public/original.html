@@ -993,8 +993,12 @@ document.getElementById('btn-generate').addEventListener('click', async function
   btn.disabled = true;
   btn.textContent = 'Generating...';
   
-  // Stop any existing audio
+  // Stop any existing audio and HIDE player while generating
   if (window._currentXttsAudio) { window._currentXttsAudio.pause(); window._currentXttsAudio = null; }
+  const player = document.getElementById('player');
+  player.style.display = 'none';
+  const oldNotice = document.getElementById('mock-notice');
+  if (oldNotice) oldNotice.remove();
   
   try {
     const voiceId = window._clonedVoiceId || 'david-default';
@@ -1011,9 +1015,8 @@ document.getElementById('btn-generate').addEventListener('click', async function
     
     btn.disabled = false;
     btn.textContent = 'Preview Speech';
-    const player = document.getElementById('player');
     player.style.display = 'block';
-    if (!document.getElementById('mock-notice')) { const n = document.createElement('div'); n.id = 'mock-notice'; n.style.cssText = 'color:#a78bfa;font-size:12px;text-align:center;margin-bottom:8px;opacity:0.8'; n.textContent = '✅ Generated with XTTS v2'; player.parentNode.insertBefore(n, player); }
+    const n = document.createElement('div'); n.id = 'mock-notice'; n.style.cssText = 'color:#a78bfa;font-size:12px;text-align:center;margin-bottom:8px;opacity:0.8'; n.textContent = '✅ Generated with XTTS v2'; player.parentNode.insertBefore(n, player);
     generateWaveform();
     player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
