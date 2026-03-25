@@ -1018,14 +1018,14 @@ document.getElementById('btn-generate').addEventListener('click', async function
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, voiceId, speed: currentSpeed, tone: currentTone, language })
     });
-    const rawText = await res.text();
-    let data;
-    try {
-      data = JSON.parse(rawText);
-    } catch(parseErr) {
-      throw new Error('Audio response too large or interrupted. Try shorter text.');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Generation failed');
     }
-    if (!res.ok) throw new Error(data.error || 'Generation failed');
+    
+    // Response is binary audio
+    const audioBlob = await res.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
     
     btn.disabled = false;
     btn.textContent = 'Generate Preview';
@@ -1035,8 +1035,8 @@ document.getElementById('btn-generate').addEventListener('click', async function
     player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
     // Play real XTTS audio
-    window._currentXttsAudio = new Audio(data.audioUrl);
-    window._generatedAudioUrl = data.audioUrl;
+    window._currentXttsAudio = new Audio(audioUrl);
+    window._generatedAudioUrl = audioUrl;
     isPlaying = true;
     document.getElementById('play-btn').textContent = '⏸';
     

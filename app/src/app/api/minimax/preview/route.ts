@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
       voice_id: voiceId || 'david-default',
       text,
       speed: speed ?? 1.0,
-      language: language || 'zh-cn',
+      language: language || 'en',
     };
 
-    // Try Lisa's endpoint, fallback to mine
+    // Try XTTS endpoints
     let res = await fetch(`${XTTS_URL}/api/tts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,17 +36,35 @@ export async function POST(req: NextRequest) {
 
     const contentType = res.headers.get('content-type') || '';
 
+    // If XTTS returns raw audio, pass it through as binary
     if (contentType.includes('audio/')) {
-      // Lisa's server returns raw audio
       const arrayBuffer = await res.arrayBuffer();
-      const b64 = Buffer.from(arrayBuffer).toString('base64');
-      const audioUrl = `data:audio/wav;base64,${b64}`;
-      return NextResponse.json({ audioUrl, format: 'wav', status: 'done' });
+      return new NextResponse(arrayBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'audio/wav',
+          'Content-Length': String(arrayBuffer.byteLength),
+        },
+      });
     }
 
-    // My server returns JSON with audioUrl
+    // XTTS returns JSON with base64 audioUrl — extract and return binary
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+    if (data.audioUrl && data.audioUrl.startsWith('data:audio/')) {
+      const b64 = data.audioUrl.split(',')[1];
+      const buf = Buffer.from(b64, 'base64');
+      return new NextResponse(buf, {
+        status: 200,
+        headers: {
+          'Content-Type': 'audio/wav',
+          'Content-Length': String(buf.byteLength),
+        },
+      });
+    }
+
+    // Fallback: return JSON as-is
     return NextResponse.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Generation failed';
