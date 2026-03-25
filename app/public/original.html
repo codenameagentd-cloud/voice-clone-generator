@@ -1050,8 +1050,14 @@ document.getElementById('btn-generate').addEventListener('click', async function
 });
 
 function speakText(text) {
-  // Replaced by XTTS API - this function is now unused
-  // Real audio playback is handled in btn-generate click handler
+  // Replay existing XTTS audio from start
+  if (window._currentXttsAudio) {
+    window._currentXttsAudio.currentTime = 0;
+    window._currentXttsAudio.playbackRate = currentSpeed;
+    window._currentXttsAudio.play();
+  } else {
+    document.getElementById('btn-generate').click();
+  }
 }
 
 function generateWaveform() {
@@ -1135,13 +1141,7 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
   });
 });
 
-// Tone
-document.getElementById('tone-slider').addEventListener('input', e => {
-  const v = parseInt(e.target.value);
-  currentTone = v;
-  document.getElementById('tone-value').textContent = (v > 0 ? '+' : '') + v;
-  // Note: Tone/pitch adjustment requires re-generation
-});
+// Tone removed — XTTS has no pitch support
 
 // Export
 document.querySelectorAll('.export-option').forEach(opt => {
