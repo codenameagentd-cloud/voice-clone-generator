@@ -1142,7 +1142,7 @@ document.querySelectorAll('.export-option').forEach(opt => {
   opt.addEventListener('click', () => {
     document.querySelectorAll('.export-option').forEach(o => o.classList.remove('selected'));
     opt.classList.add('selected');
-    // disabled in mock mode
+    // Export real XTTS audio
   });
 });
 
@@ -1154,7 +1154,21 @@ document.getElementById('copy-id-btn').addEventListener('click', function() {
 
 // Download mock audio
 document.getElementById('btn-download').addEventListener('click', function() {
-  alert('MiniMax API key required. Export is not available in mock mode.');
+  if (window._generatedAudioUrl) {
+    const b64 = window._generatedAudioUrl.split(',')[1];
+    const bytes = atob(b64);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'voice-clone-' + Date.now() + '.wav';
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    alert('No audio generated yet. Go back to Test and click Preview Speech first.');
+  }
 });
 
 document.getElementById('btn-to-export').addEventListener('click', () => goToStep(4));
