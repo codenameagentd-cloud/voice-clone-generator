@@ -800,7 +800,7 @@ body {
         <div class="char-count"><span id="char-count">24</span> characters</div>
 
         <div class="btn-group">
-          <button class="btn btn-primary" id="btn-generate">Preview Speech</button>
+          <button class="btn btn-primary" id="btn-generate">Generate Preview</button>
         </div>
       </div>
 
@@ -833,7 +833,7 @@ body {
               <span>Tone</span>
               <span class="control-value" id="tone-value">0</span>
             </div>
-            <input type="range" class="slider" id="tone-slider" min="-12" max="12" value="0" step="1">
+            <input type="range" class="slider" id="tone-slider" disabled style="opacity:0.4;pointer-events:none" min="-12" max="12" value="0" step="1">
           </div>
         </div>
       </div>
@@ -1014,7 +1014,7 @@ document.getElementById('btn-generate').addEventListener('click', async function
     if (!res.ok) throw new Error(data.error || 'Generation failed');
     
     btn.disabled = false;
-    btn.textContent = 'Preview Speech';
+    btn.textContent = 'Generate Preview';
     player.style.display = 'block';
     const n = document.createElement('div'); n.id = 'mock-notice'; n.style.cssText = 'color:#a78bfa;font-size:12px;text-align:center;margin-bottom:8px;opacity:0.8'; n.textContent = '✅ Generated with XTTS v2'; player.parentNode.insertBefore(n, player);
     generateWaveform();
@@ -1040,7 +1040,7 @@ document.getElementById('btn-generate').addEventListener('click', async function
     if (expBtn) expBtn.disabled = false;
   } catch(err) {
     btn.disabled = false;
-    btn.textContent = 'Preview Speech';
+    btn.textContent = 'Generate Preview';
     alert('Generation failed: ' + err.message);
   }
 });
