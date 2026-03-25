@@ -943,33 +943,37 @@ async function simulateTraining() {
   const status = document.getElementById('train-status');
   const time = document.getElementById('train-time');
   
-  bar.style.width = '30%';
-  status.textContent = 'Uploading & cloning voice...';
-  time.textContent = '~5s';
+  bar.style.width = '20%';
+  status.textContent = 'Uploading voice sample...';
+  time.textContent = '';
   
   try {
     const cloneForm = new FormData();
     cloneForm.append('trainingFile', uploadedFile);
     
-    bar.style.width = '60%';
-    status.textContent = 'Building voice profile...';
+    bar.style.width = '50%';
+    status.textContent = 'Uploading...';
     
     const res = await fetch('/api/minimax/clone', { method: 'POST', body: cloneForm });
+    
+    bar.style.width = '80%';
+    status.textContent = 'Processing...';
+    
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Clone failed');
     
     window._clonedVoiceId = data.voiceId;
     
     bar.style.width = '100%';
-    status.textContent = 'Complete!';
-    time.textContent = 'Done';
+    status.textContent = 'Voice cloned ✓';
+    time.textContent = '';
     status.classList.remove('training-pulse');
     
     setTimeout(() => goToStep(3), 500);
   } catch(err) {
     bar.style.width = '0%';
     status.textContent = 'Failed: ' + err.message;
-    time.textContent = 'Error';
+    time.textContent = '';
     status.classList.remove('training-pulse');
   }
 }
