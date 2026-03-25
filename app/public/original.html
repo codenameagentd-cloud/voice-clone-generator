@@ -705,7 +705,7 @@ body {
   </div>
   <div class="step-labels">
     <div class="step-label active" id="label-1">Upload</div>
-    <div class="step-label" id="label-2">Train</div>
+    <div class="step-label" id="label-2">Clone</div>
     <div class="step-label" id="label-3">Test</div>
     <div class="step-label" id="label-4">Export</div>
   </div>
@@ -761,7 +761,7 @@ body {
     </div>
 
     <div class="btn-group">
-      <button class="btn btn-primary" id="btn-train" disabled>Start Training →</button>
+      <button class="btn btn-primary" id="btn-train" disabled>Clone Voice →</button>
     </div>
   </div>
 
@@ -944,7 +944,7 @@ async function simulateTraining() {
   const time = document.getElementById('train-time');
   
   bar.style.width = '30%';
-  status.textContent = 'Uploading voice sample...';
+  status.textContent = 'Uploading & cloning voice...';
   time.textContent = '~5s';
   
   try {
@@ -952,7 +952,7 @@ async function simulateTraining() {
     cloneForm.append('trainingFile', uploadedFile);
     
     bar.style.width = '60%';
-    status.textContent = 'Cloning voice profile...';
+    status.textContent = 'Building voice profile...';
     
     const res = await fetch('/api/minimax/clone', { method: 'POST', body: cloneForm });
     const data = await res.json();
