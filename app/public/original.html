@@ -944,13 +944,17 @@ async function simulateTraining() {
   const time = document.getElementById('train-time');
   
   bar.style.width = '0%';
-  status.textContent = 'Uploading voice sample...';
+  status.textContent = 'Preparing...';
   time.textContent = '';
+  
+  // Let browser paint 0% before proceeding
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   
   try {
     const cloneForm = new FormData();
     cloneForm.append('trainingFile', uploadedFile);
     
+    bar.style.transition = 'width 0.6s ease';
     bar.style.width = '30%';
     status.textContent = 'Uploading...';
     
