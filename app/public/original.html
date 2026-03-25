@@ -938,26 +938,40 @@ btnTrain.addEventListener('click', () => {
   simulateTraining();
 });
 
-function simulateTraining() {
+async function simulateTraining() {
   const bar = document.getElementById('train-progress');
   const status = document.getElementById('train-status');
   const time = document.getElementById('train-time');
-  const stages = [
-    { p: 20, s: 'Extracting audio features...', t: '~25s' },
-    { p: 45, s: 'Building voice embeddings...', t: '~18s' },
-    { p: 70, s: 'Training neural model...', t: '~10s' },
-    { p: 90, s: 'Finalizing voice profile...', t: '~3s' },
-    { p: 100, s: 'Complete!', t: 'Done' },
-  ];
-  let i = 0;
-  const interval = setInterval(() => {
-    if (i >= stages.length) { clearInterval(interval); setTimeout(() => goToStep(3), 500); return; }
-    bar.style.width = stages[i].p + '%';
-    status.textContent = stages[i].s;
-    time.textContent = stages[i].t;
-    if (stages[i].p === 100) status.classList.remove('training-pulse');
-    i++;
-  }, 800);
+  
+  bar.style.width = '30%';
+  status.textContent = 'Uploading voice sample...';
+  time.textContent = '~5s';
+  
+  try {
+    const cloneForm = new FormData();
+    cloneForm.append('trainingFile', uploadedFile);
+    
+    bar.style.width = '60%';
+    status.textContent = 'Cloning voice profile...';
+    
+    const res = await fetch('/api/minimax/clone', { method: 'POST', body: cloneForm });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Clone failed');
+    
+    window._clonedVoiceId = data.voiceId;
+    
+    bar.style.width = '100%';
+    status.textContent = 'Complete!';
+    time.textContent = 'Done';
+    status.classList.remove('training-pulse');
+    
+    setTimeout(() => goToStep(3), 500);
+  } catch(err) {
+    bar.style.width = '0%';
+    status.textContent = 'Failed: ' + err.message;
+    time.textContent = 'Error';
+    status.classList.remove('training-pulse');
+  }
 }
 
 // Generate
@@ -971,60 +985,66 @@ let speechPlaying = false;
 let currentSpeed = 1;
 let currentTone = 0;
 
-document.getElementById('btn-generate').addEventListener('click', function() {
+document.getElementById('btn-generate').addEventListener('click', async function() {
   const btn = this;
   const text = document.getElementById('gen-text').value.trim();
   if (!text) return;
   
   btn.disabled = true;
-  btn.textContent = 'Generating (Demo)...';
+  btn.textContent = 'Generating...';
   
-  // Stop any existing speech
-  window.speechSynthesis.cancel();
+  // Stop any existing audio
+  if (window._currentXttsAudio) { window._currentXttsAudio.pause(); window._currentXttsAudio = null; }
   
-  setTimeout(() => {
+  try {
+    const voiceId = window._clonedVoiceId || 'david-default';
+    const langBtn = document.querySelector('.lang-btn.active');
+    const language = langBtn ? langBtn.dataset.lang : 'zh-cn';
+    
+    const res = await fetch('/api/minimax/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceId, speed: currentSpeed, language })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
+    
     btn.disabled = false;
     btn.textContent = 'Preview Speech';
     const player = document.getElementById('player');
     player.style.display = 'block';
-    if (!document.getElementById('mock-notice')) { const n = document.createElement('div'); n.id = 'mock-notice'; n.style.cssText = 'color:#a78bfa;font-size:12px;text-align:center;margin-bottom:8px;opacity:0.8'; n.textContent = '🔊 Connected to XTTS v2 — real voice cloning active.'; player.parentNode.insertBefore(n, player); }
+    if (!document.getElementById('mock-notice')) { const n = document.createElement('div'); n.id = 'mock-notice'; n.style.cssText = 'color:#a78bfa;font-size:12px;text-align:center;margin-bottom:8px;opacity:0.8'; n.textContent = '✅ Generated with XTTS v2'; player.parentNode.insertBefore(n, player); }
     generateWaveform();
     player.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     
-    // Use Web Speech API to actually read the text
-    speakText(text);
-  }, 800);
+    // Play real XTTS audio
+    window._currentXttsAudio = new Audio(data.audioUrl);
+    window._generatedAudioUrl = data.audioUrl;
+    isPlaying = true;
+    document.getElementById('play-btn').textContent = '⏸';
+    
+    window._currentXttsAudio.onended = () => {
+      isPlaying = false;
+      document.getElementById('play-btn').textContent = '▶';
+      document.getElementById('player-seek').value = 100;
+      document.querySelectorAll('.waveform-bar').forEach(b => b.classList.add('played'));
+    };
+    window._currentXttsAudio.play();
+    simulatePlayback();
+    
+    // Enable export button
+    const expBtn = document.getElementById('btn-export');
+    if (expBtn) expBtn.disabled = false;
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = 'Preview Speech';
+    alert('Generation failed: ' + err.message);
+  }
 });
 
 function speakText(text) {
-  window.speechSynthesis.cancel();
-  
-  const utter = new SpeechSynthesisUtterance(text);
-  // Try to find a Chinese voice
-  const voices = window.speechSynthesis.getVoices();
-  const zhVoice = voices.find(v => v.lang.startsWith('zh')) || voices[0];
-  if (zhVoice) utter.voice = zhVoice;
-  
-  utter.rate = currentSpeed;
-  utter.pitch = 1 + (currentTone / 12); // map -12~+12 to ~0.0~2.0
-  
-  isPlaying = true;
-  speechPlaying = true;
-  document.getElementById('play-btn').textContent = '⏸';
-  document.getElementById('player-seek').value = 0;
-  
-  utter.onend = () => {
-    isPlaying = false;
-    speechPlaying = false;
-    document.getElementById('play-btn').textContent = '▶';
-    document.getElementById('player-seek').value = 100;
-    document.getElementById('player-time').textContent = '0:05 / 0:05';
-    document.querySelectorAll('.waveform-bar').forEach(b => b.classList.add('played'));
-  };
-  
-  speechUtterance = utter;
-  window.speechSynthesis.speak(utter);
-  simulatePlayback();
+  // Replaced by XTTS API - this function is now unused
+  // Real audio playback is handled in btn-generate click handler
 }
 
 function generateWaveform() {
@@ -1054,12 +1074,12 @@ document.getElementById('play-btn').addEventListener('click', function() {
   }
   
   if (isPlaying) {
-    window.speechSynthesis.pause();
+    if (window._currentXttsAudio) window._currentXttsAudio.pause();
     isPlaying = false;
     this.textContent = '▶';
   } else {
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
+    if (window._currentXttsAudio && window._currentXttsAudio.paused) {
+      window._currentXttsAudio.play();
     } else {
       speakText(text);
     }
@@ -1093,7 +1113,7 @@ function simulatePlayback() {
 }
 
 // Load voices
-window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+// XTTS v2 - no browser voices needed
 
 // Speed - changes rate and re-generates
 document.querySelectorAll('.speed-btn').forEach(btn => {
@@ -1104,7 +1124,7 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
     // Auto re-generate with new speed
     const text = document.getElementById('gen-text').value.trim();
     if (text && document.getElementById('player').style.display === 'block') {
-      window.speechSynthesis.cancel();
+      if (window._currentXttsAudio) { window._currentXttsAudio.pause(); window._currentXttsAudio = null; }
       speakText(text);
     }
   });
@@ -1194,118 +1214,3 @@ function goToStep(n) {
   }
 }
 </script>
-
-
-<script>
-// ===== XTTS v2 Real API Integration =====
-// Override mock speech synthesis with real XTTS API calls
-
-(function() {
-  // Store cloned voice ID
-  window._clonedVoiceId = null;
-  let _currentAudio = null;
-
-  // Override the preview/generate speech function
-  const origGenerateBtn = document.querySelector('[onclick*="generateSpeech"], [onclick*="previewSpeech"]');
-  
-  // Find generate button by text
-  document.addEventListener('click', function(e) {
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    
-    // Preview Speech button
-    if (btn.textContent.includes('Preview Speech') && btn.closest('#step3')) {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      handleRealPreview(btn);
-      return;
-    }
-  }, true);
-
-  async function handleRealPreview(btn) {
-    const textEl = document.getElementById('preview-text');
-    const text = textEl ? textEl.value.trim() : '';
-    if (!text) { alert('Please enter text'); return; }
-
-    const speedSlider = document.getElementById('speed-slider');
-    const speed = speedSlider ? parseFloat(speedSlider.value) : 1.0;
-    
-    // Get language from active lang button or default
-    const langBtns = document.querySelectorAll('.lang-btn.active, [data-lang].active');
-    let language = 'zh-cn';
-    langBtns.forEach(b => { if (b.dataset.lang) language = b.dataset.lang; });
-
-    const voiceId = window._clonedVoiceId || 'david-default';
-
-    btn.disabled = true;
-    btn.textContent = 'Generating...';
-    
-    // Show player area
-    const player = document.getElementById('audio-player') || document.querySelector('.audio-player');
-    if (player) player.style.display = 'block';
-
-    try {
-      const res = await fetch('/api/minimax/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voiceId, speed, language })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      // Stop any existing audio
-      if (_currentAudio) { _currentAudio.pause(); _currentAudio = null; }
-
-      // Create and play audio
-      _currentAudio = new Audio(data.audioUrl);
-      window._generatedAudioUrl = data.audioUrl;
-      
-      // Update player UI
-      const playBtn = document.getElementById('play-btn');
-      if (playBtn) playBtn.textContent = '⏸';
-      
-      _currentAudio.play();
-      _currentAudio.onended = () => {
-        if (playBtn) playBtn.textContent = '▶';
-      };
-
-      // Enable export
-      const exportBtns = document.querySelectorAll('#step4-content button, .export-btn, [onclick*="download"]');
-      exportBtns.forEach(b => b.disabled = false);
-
-      // Remove mock notice if present
-      const notice = document.getElementById('mock-notice');
-      if (notice) notice.textContent = '✅ Generated with XTTS v2';
-
-    } catch(err) {
-      alert('Generation failed: ' + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '▶ Preview Speech';
-    }
-  }
-
-  // Override download to use real audio
-  const origDownload = window.downloadAudio;
-  window.downloadAudio = function() {
-    if (window._generatedAudioUrl) {
-      const b64 = window._generatedAudioUrl.split(',')[1];
-      const bytes = atob(b64);
-      const arr = new Uint8Array(bytes.length);
-      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-      const blob = new Blob([arr], { type: 'audio/wav' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'voice-clone-' + Date.now() + '.wav';
-      a.click();
-      URL.revokeObjectURL(url);
-    } else if (origDownload) {
-      origDownload();
-    }
-  };
-})();
-</script>
-
-</body>
-</html>
