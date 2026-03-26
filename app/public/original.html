@@ -1024,6 +1024,7 @@ async function simulateTraining() {
     if (!res.ok) throw new Error(data.error || 'Clone failed');
     
     window._clonedVoiceId = data.voiceId;
+    document.getElementById('voice-id').textContent = data.voiceId;
     
     bar.style.width = '100%';
     status.textContent = 'Voice cloned ✓';
