@@ -5,7 +5,7 @@ const XTTS_URL = process.env.XTTS_URL || 'http://localhost:8321';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { voiceId, text, speed, language, temperature, top_p, top_k, repetition_penalty } = body;
+    const { voiceId, text, speed, language, temperature, top_p, top_k, repetition_penalty, gpt_cond_len } = body;
 
     if (!text) {
       return NextResponse.json({ error: 'text is required' }, { status: 400 });
@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
       top_p: top_p ?? 0.85,
       top_k: top_k ?? 50,
       repetition_penalty: repetition_penalty ?? 2.0,
+      gpt_cond_len: gpt_cond_len ?? 12,
     };
 
     // Try XTTS endpoints

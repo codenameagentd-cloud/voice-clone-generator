@@ -188,10 +188,11 @@ class XTTSHandler(BaseHTTPRequestHandler):
             text = body.get("text", "")
             speed = float(body.get("speed", 1.0))
             lang = body.get("language", "zh-cn")
-            temperature = float(body.get("temperature", 0.75))
+            temperature = float(body.get("temperature", 0.85))
             top_p = float(body.get("top_p", 0.85))
             top_k = int(body.get("top_k", 50))
-            repetition_penalty = float(body.get("repetition_penalty", 5.0))
+            repetition_penalty = float(body.get("repetition_penalty", 2.0))
+            gpt_cond_len = int(body.get("gpt_cond_len", 24))
 
             if not text:
                 self._json_response(400, {"error": "text is required"})
@@ -206,7 +207,7 @@ class XTTSHandler(BaseHTTPRequestHandler):
                 return
 
             # Use direct model API with quality params
-            gpt_cond_latent, speaker_embedding = get_conditioning(ref, gpt_cond_len=24)
+            gpt_cond_latent, speaker_embedding = get_conditioning(ref, gpt_cond_len=gpt_cond_len)
             
             out = xtts_model.inference(
                 text=text,
