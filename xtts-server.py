@@ -171,7 +171,7 @@ class XTTSHandler(BaseHTTPRequestHandler):
             
             # Pre-compute conditioning
             try:
-                get_conditioning(_voices[voice_id]["ref_path"], gpt_cond_len=12)
+                get_conditioning(_voices[voice_id]["ref_path"], gpt_cond_len=24)
             except Exception as e:
                 print(f"Pre-conditioning failed: {e}")
 
@@ -188,6 +188,10 @@ class XTTSHandler(BaseHTTPRequestHandler):
             text = body.get("text", "")
             speed = float(body.get("speed", 1.0))
             lang = body.get("language", "zh-cn")
+            temperature = float(body.get("temperature", 0.75))
+            top_p = float(body.get("top_p", 0.85))
+            top_k = int(body.get("top_k", 50))
+            repetition_penalty = float(body.get("repetition_penalty", 5.0))
 
             if not text:
                 self._json_response(400, {"error": "text is required"})
@@ -202,17 +206,17 @@ class XTTSHandler(BaseHTTPRequestHandler):
                 return
 
             # Use direct model API with quality params
-            gpt_cond_latent, speaker_embedding = get_conditioning(ref, gpt_cond_len=12)
+            gpt_cond_latent, speaker_embedding = get_conditioning(ref, gpt_cond_len=24)
             
             out = xtts_model.inference(
                 text=text,
                 language=lang,
                 gpt_cond_latent=gpt_cond_latent,
                 speaker_embedding=speaker_embedding,
-                temperature=0.75,
-                repetition_penalty=3.0,
-                top_k=50,
-                top_p=0.85,
+                temperature=temperature,
+                repetition_penalty=repetition_penalty,
+                top_k=top_k,
+                top_p=top_p,
                 speed=speed,
                 enable_text_splitting=True,
             )
