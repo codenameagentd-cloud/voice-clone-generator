@@ -348,6 +348,23 @@ body {
   margin-top: 24px;
 }
 
+
+/* Advanced Voice Controls */
+.advanced-toggle {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  color: var(--text-2); font-size: 13px; margin: 16px 0 8px;
+  user-select: none;
+}
+.advanced-toggle:hover { color: var(--accent); }
+.advanced-toggle .arrow { transition: transform 0.2s; display: inline-block; }
+.advanced-toggle .arrow.open { transform: rotate(90deg); }
+.advanced-controls { display: flex; gap: 12px; flex-direction: column; margin-bottom: 16px; }
+.advanced-controls.open { display: flex; }
+.adv-slider-row { display: flex; align-items: center; gap: 12px; }
+.adv-slider-row label { min-width: 130px; font-size: 13px; color: var(--text-2); }
+.adv-slider-row input[type=range] { flex: 1; }
+.adv-slider-row .adv-val { min-width: 40px; text-align: right; font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
+
 /* Progress */
 .progress-container {
   margin-top: 24px;
@@ -800,7 +817,33 @@ body {
         <div class="char-count"><span id="char-count">24</span> characters</div>
 
         <div class="btn-group">
-          <button class="btn btn-primary" id="btn-generate">Generate Preview</button>
+          
+      <div class="advanced-toggle" id="adv-toggle">
+        <span class="arrow" id="adv-arrow">▼</span> Advanced Voice Settings
+      </div>
+      <div class="advanced-controls" id="adv-controls">
+        <div class="adv-slider-row">
+          <label>Temperature</label>
+          <input type="range" id="adv-temp" min="0.1" max="1.0" step="0.05" value="0.85">
+          <span class="adv-val" id="adv-temp-val">0.85</span>
+        </div>
+        <div class="adv-slider-row">
+          <label>Top P</label>
+          <input type="range" id="adv-topp" min="0.5" max="1.0" step="0.05" value="0.85">
+          <span class="adv-val" id="adv-topp-val">0.85</span>
+        </div>
+        <div class="adv-slider-row">
+          <label>Top K</label>
+          <input type="range" id="adv-topk" min="10" max="100" step="5" value="50">
+          <span class="adv-val" id="adv-topk-val">50</span>
+        </div>
+        <div class="adv-slider-row">
+          <label>Repetition Penalty</label>
+          <input type="range" id="adv-rep" min="1.0" max="10.0" step="0.5" value="2.0">
+          <span class="adv-val" id="adv-rep-val">2.0</span>
+        </div>
+      </div>
+        <button class="btn btn-primary" id="btn-generate">Generate Preview</button>
         </div>
       </div>
 
@@ -1016,7 +1059,13 @@ document.getElementById('btn-generate').addEventListener('click', async function
     const res = await fetch('/api/minimax/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, voiceId, speed: currentSpeed, tone: currentTone, language })
+      body: JSON.stringify({
+        text, voiceId, speed: currentSpeed, language,
+        temperature: parseFloat(document.getElementById('adv-temp').value),
+        top_p: parseFloat(document.getElementById('adv-topp').value),
+        top_k: parseInt(document.getElementById('adv-topk').value),
+        repetition_penalty: parseFloat(document.getElementById('adv-rep').value),
+      })
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
@@ -1050,8 +1099,8 @@ document.getElementById('btn-generate').addEventListener('click', async function
     simulatePlayback();
     
     // Enable export button
-    const expBtn = document.getElementById('btn-export');
-    if (expBtn) expBtn.disabled = false;
+    const expBtn = document.getElementById('btn-download');
+    if (expBtn) { expBtn.disabled = false; expBtn.textContent = '⬇ Download'; }
   } catch(err) {
     btn.disabled = false;
     btn.textContent = 'Generate Preview';
@@ -1153,12 +1202,40 @@ document.querySelectorAll('.speed-btn').forEach(btn => {
 
 // Tone removed — XTTS has no pitch support
 
+
+// Advanced controls toggle
+document.getElementById('adv-toggle').addEventListener('click', () => {
+  const ctrl = document.getElementById('adv-controls');
+  const arrow = document.getElementById('adv-arrow');
+  ctrl.classList.toggle('open');
+  arrow.classList.toggle('open');
+});
+['adv-temp','adv-topp','adv-topk','adv-rep'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    document.getElementById(id + '-val').textContent = e.target.value;
+  });
+});
+
 // Export
 document.querySelectorAll('.export-option').forEach(opt => {
   opt.addEventListener('click', () => {
     document.querySelectorAll('.export-option').forEach(o => o.classList.remove('selected'));
     opt.classList.add('selected');
-    // Export real XTTS audio
+    
+// Advanced controls toggle
+document.getElementById('adv-toggle').addEventListener('click', () => {
+  const ctrl = document.getElementById('adv-controls');
+  const arrow = document.getElementById('adv-arrow');
+  ctrl.classList.toggle('open');
+  arrow.classList.toggle('open');
+});
+['adv-temp','adv-topp','adv-topk','adv-rep'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    document.getElementById(id + '-val').textContent = e.target.value;
+  });
+});
+
+// Export real XTTS audio
   });
 });
 
@@ -1171,17 +1248,10 @@ document.getElementById('copy-id-btn').addEventListener('click', function() {
 // Download mock audio
 document.getElementById('btn-download').addEventListener('click', function() {
   if (window._generatedAudioUrl) {
-    const b64 = window._generatedAudioUrl.split(',')[1];
-    const bytes = atob(b64);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    const blob = new Blob([arr], { type: 'audio/wav' });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = window._generatedAudioUrl;
     a.download = 'voice-clone-' + Date.now() + '.wav';
     a.click();
-    URL.revokeObjectURL(url);
   } else {
     alert('No audio generated yet. Go back to Test and click Preview Speech first.');
   }
