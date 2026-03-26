@@ -828,19 +828,34 @@ body {
           <input type="range" id="adv-temp" min="0.1" max="1.0" step="0.05" value="0.75">
           <span class="adv-val" id="adv-temp-val">0.75</span>
         </div>
-        <div class="adv-hint">Low = stable & flat · High = natural but may drift</div>
+        <div class="adv-hint">Low = steady · High = dynamic</div>
         <div class="adv-slider-row">
           <label>Stability</label>
           <input type="range" id="adv-rep" min="1.0" max="10.0" step="0.5" value="2.0">
           <span class="adv-val" id="adv-rep-val">2.0</span>
         </div>
-        <div class="adv-hint">Low = natural but may repeat · High = stable but stiff</div>
+        <div class="adv-hint">Low = natural · High = consistent</div>
         <div class="adv-slider-row">
           <label>Voice Match</label>
           <input type="range" id="adv-condlen" min="6" max="30" step="1" value="12">
           <span class="adv-val" id="adv-condlen-val">12</span>
         </div>
-        <div class="adv-hint">Higher = closer to your voice, but slower generation</div>
+        <div class="adv-hint">Higher = closer match, slower generation</div>
+        <div class="advanced-fold" id="adv-fold-toggle" style="cursor:pointer;font-size:12px;color:var(--text-3);margin-top:8px;">
+          <span id="adv-fold-arrow">▶</span> Advanced
+        </div>
+        <div id="adv-fold-panel" style="display:none;gap:8px;flex-direction:column;">
+          <div class="adv-slider-row">
+            <label>Top P</label>
+            <input type="range" id="adv-topp" min="0.5" max="1.0" step="0.05" value="0.85">
+            <span class="adv-val" id="adv-topp-val">0.85</span>
+          </div>
+          <div class="adv-slider-row">
+            <label>Top K</label>
+            <input type="range" id="adv-topk" min="10" max="100" step="5" value="50">
+            <span class="adv-val" id="adv-topk-val">50</span>
+          </div>
+        </div>
       </div>
         <button class="btn btn-primary" id="btn-generate">Generate Preview</button>
         </div>
@@ -1063,6 +1078,8 @@ document.getElementById('btn-generate').addEventListener('click', async function
         temperature: parseFloat(document.getElementById('adv-temp').value),
         repetition_penalty: parseFloat(document.getElementById('adv-rep').value),
         gpt_cond_len: parseInt(document.getElementById('adv-condlen').value),
+        top_p: parseFloat(document.getElementById('adv-topp').value),
+        top_k: parseInt(document.getElementById('adv-topk').value),
       })
     });
     if (!res.ok) {
@@ -1208,7 +1225,7 @@ document.getElementById('adv-toggle').addEventListener('click', () => {
   ctrl.classList.toggle('open');
   arrow.classList.toggle('open');
 });
-['adv-temp','adv-rep','adv-condlen'].forEach(id => {
+['adv-temp','adv-rep','adv-condlen','adv-topp','adv-topk'].forEach(id => {
   document.getElementById(id).addEventListener('input', e => {
     document.getElementById(id + '-val').textContent = e.target.value;
   });
@@ -1227,7 +1244,7 @@ document.getElementById('adv-toggle').addEventListener('click', () => {
   ctrl.classList.toggle('open');
   arrow.classList.toggle('open');
 });
-['adv-temp','adv-rep','adv-condlen'].forEach(id => {
+['adv-temp','adv-rep','adv-condlen','adv-topp','adv-topk'].forEach(id => {
   document.getElementById(id).addEventListener('input', e => {
     document.getElementById(id + '-val').textContent = e.target.value;
   });
@@ -1311,4 +1328,17 @@ function goToStep(n) {
     label.className = 'step-label' + (i < n ? ' done' : i === n ? ' active' : '');
   }
 }
+
+  document.getElementById('adv-fold-toggle').addEventListener('click', () => {
+    const panel = document.getElementById('adv-fold-panel');
+    const arrow = document.getElementById('adv-fold-arrow');
+    if (panel.style.display === 'none') {
+      panel.style.display = 'flex';
+      arrow.textContent = '▼';
+    } else {
+      panel.style.display = 'none';
+      arrow.textContent = '▶';
+    }
+  });
+
 </script>
