@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       top_p: top_p ?? 0.85,
       top_k: top_k ?? 50,
       repetition_penalty: repetition_penalty ?? 2.0,
-      gpt_cond_len: gpt_cond_len ?? 12,
+      gpt_cond_len: gpt_cond_len ?? 24,
     };
 
     // Try XTTS endpoints
